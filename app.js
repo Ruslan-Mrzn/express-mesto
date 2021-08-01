@@ -14,11 +14,12 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
   useCreateIndex: true,
   useFindAndModify: false,
+  useUnifiedTopology: true,
 });
 
 app.use((req, res, next) => {
   req.user = {
-    _id: '6100611d1512be0f7c437286',
+    _id: '6101a6eb3b9a0e1fc0c4fb9c',
   };
 
   next();

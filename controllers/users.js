@@ -1,16 +1,12 @@
 const User = require('../models/user');
 
-const INCORRECT_DATA = 400;
-const NOT_FOUND = 404;
-const SERVER_ERROR = 500;
-
-const sendServerErrorMessage = (res) => {
-  res.status(SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
-};
-
-const sendUserNotFoundByIdMessage = (res) => {
-  res.status(NOT_FOUND).send({ message: 'Ошибка! Пользователь по указанному _id не найден' });
-};
+const {
+  INCORRECT_DATA,
+  NOT_FOUND,
+  sendServerErrorMessage,
+  sendUserNotFoundByIdMessage,
+  sendInvalidIdMessage,
+} = require('../utils/utils');
 
 module.exports.getUsers = (req, res) => {
   User.find({})
@@ -19,10 +15,20 @@ module.exports.getUsers = (req, res) => {
 };
 
 module.exports.getUser = (req, res) => {
-  User.findById(req.params.id)
+  const { id } = req.params;
+  User.findById(id)
+    .orFail(() => {
+      const error = new Error('Пользователь по заданному id отсутствует в базе');
+      error.statusCode = NOT_FOUND;
+      throw error;
+    })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'CastError') {
+        sendInvalidIdMessage(res);
+        return;
+      }
+      if (err.statusCode === NOT_FOUND) {
         sendUserNotFoundByIdMessage(res);
         return;
       }
@@ -45,13 +51,18 @@ module.exports.createUser = (req, res) => {
 };
 
 module.exports.updateProfile = (req, res) => {
-  const { newName, newAbout } = req.body;
+  const { user: { _id }, body: { name, about } } = req;
 
-  User.findByIdAndUpdate(req.user._id, { name: newName, about: newAbout }, {
+  User.findByIdAndUpdate(_id, { name, about }, {
     new: true, // обработчик then получит на вход обновлённую запись
     runValidators: true, // данные будут валидированы перед изменением
     upsert: false, // если пользователь не найден, он не будет создан (это значение по умолчанию)
   })
+    .orFail(() => {
+      const error = new Error('Пользователь по заданному id отсутствует в базе');
+      error.statusCode = NOT_FOUND;
+      throw error;
+    })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -59,6 +70,10 @@ module.exports.updateProfile = (req, res) => {
         return;
       }
       if (err.name === 'CastError') {
+        sendInvalidIdMessage(res);
+        return;
+      }
+      if (err.statusCode === NOT_FOUND) {
         sendUserNotFoundByIdMessage(res);
         return;
       }
@@ -67,9 +82,14 @@ module.exports.updateProfile = (req, res) => {
 };
 
 module.exports.updateAvatar = (req, res) => {
-  const { newAvatar } = req.body;
+  const { user: { _id }, body: { avatar } } = req;
 
-  User.findByIdAndUpdate(req.user._id, { avatar: newAvatar }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(_id, { avatar }, { new: true, runValidators: true })
+    .orFail(() => {
+      const error = new Error('Пользователь по заданному id отсутствует в базе');
+      error.statusCode = NOT_FOUND;
+      throw error;
+    })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -77,6 +97,10 @@ module.exports.updateAvatar = (req, res) => {
         return;
       }
       if (err.name === 'CastError') {
+        sendInvalidIdMessage(res);
+        return;
+      }
+      if (err.statusCode === NOT_FOUND) {
         sendUserNotFoundByIdMessage(res);
         return;
       }
