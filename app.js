@@ -1,5 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
+const {
+  login, createUser,
+} = require('./controllers/users');
 
 const app = express();
 
@@ -17,16 +22,20 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useUnifiedTopology: true,
 });
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '6101a6eb3b9a0e1fc0c4fb9c',
-  };
+app.use(cookieParser()); // подключаем парсер кук как мидлвэр
 
-  next();
-});
+app.post('/signin', login);
+
+app.post('/signup', createUser);
+
+// авторизация
+app.use(require('./middlewares/auth'));
 
 app.use('/users', require('./routes/users'));
 
 app.use('/cards', require('./routes/cards'));
 
-app.listen(PORT);
+app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`App listening on port ${PORT}`);
+});

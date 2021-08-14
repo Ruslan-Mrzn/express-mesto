@@ -1,5 +1,6 @@
 const INCORRECT_DATA = 400;
 const NOT_FOUND = 404;
+const UNAUTHORIZED = 401;
 const SERVER_ERROR = 500;
 
 const sendServerErrorMessage = (res) => {
@@ -21,6 +22,7 @@ const sendInvalidIdMessage = (res) => {
 module.exports = {
   INCORRECT_DATA,
   NOT_FOUND,
+  UNAUTHORIZED,
   SERVER_ERROR,
   sendServerErrorMessage,
   sendUserNotFoundByIdMessage,

@@ -29,14 +29,25 @@ module.exports.createCard = (req, res) => {
 };
 
 module.exports.deleteCard = (req, res) => {
-  const { id } = req.params;
-  Card.findByIdAndRemove(id)
+  const { params: { id }, user: { _id } } = req;
+
+  Card.findById(id)
     .orFail(() => {
       const error = new Error('Карточка по заданному id отсутствует в базе');
       error.statusCode = NOT_FOUND;
       throw error;
     })
-    .then((card) => res.send({ data: card }))
+    .then((card) => {
+      if (JSON.stringify(card.owner) !== JSON.stringify(_id)) {
+        res.status(403).send({ message: 'Ошибка: Вы можете удалять только свои карточки' });
+        return;
+      }
+      Card.findByIdAndRemove(card.id)
+        .then((myCard) => res.send({ data: myCard }));
+    })
+    // .then(() => {
+
+    // })
     .catch((err) => {
       if (err.name === 'CastError') {
         sendInvalidIdMessage(res);
@@ -48,6 +59,23 @@ module.exports.deleteCard = (req, res) => {
       }
       sendServerErrorMessage(res);
     });
+// .orFail(() => {
+//   const error = new Error('Карточка по заданному id отсутствует в базе');
+//   error.statusCode = NOT_FOUND;
+//   throw error;
+// })
+// .then((card) => res.send({ data: card }))
+// .catch((err) => {
+//   if (err.name === 'CastError') {
+//     sendInvalidIdMessage(res);
+//     return;
+//   }
+//   if (err.statusCode === NOT_FOUND) {
+//     sendCardNotFoundByIdMessage(res);
+//     return;
+//   }
+//   sendServerErrorMessage(res);
+// });
 };
 
 module.exports.likeCard = (req, res) => {
