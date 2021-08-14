@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
+const UnauthorizedError = require('../errors/unauthorized-err');
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -14,7 +16,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 3,
-    select: false, // необходимо добавить поле select
+    select: false, // необходимо добавить поле select (чтобы убрать его из выдачи в теле ответа)
   },
 
   name: {
@@ -42,21 +44,21 @@ userSchema.statics.findUserByCredentials = function (email, password) {
   // попытаемся найти пользователя по почте
   return this.findOne({ email }).select('+password')
     .then((user) => {
-      // не нашёлся — отклоняем промис
+      // не нашёлся — отправляем ошибку
       if (!user) {
-        return Promise.reject(new Error('Неправильные почта или пароль'));
+        throw new UnauthorizedError('Неправильная почта или пароль');
       }
       // нашёлся — сравниваем хеши
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            return Promise.reject(new Error('Неправильные почта или пароль'));
+            throw new UnauthorizedError('Неправильная почта или пароль');
           }
-
+          // вернем для доступа к этому объекту в контроллере
           return user;
         });
     });
-  // блок catch будет находится в контроллере
+  // блок catch находится в контроллере
 };
 
 module.exports = mongoose.model('user', userSchema);
