@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
+const npmValidator = require('validator');
 const bcrypt = require('bcryptjs');
 
 const UnauthorizedError = require('../errors/unauthorized-err');
@@ -9,13 +9,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    validate: (v) => validator.isEmail(v),
+    validate: (v) => npmValidator.isEmail(v),
   },
 
   password: {
     type: String,
     required: true,
-    minlength: 3,
+    minlength: 4,
     select: false, // необходимо добавить поле select (чтобы убрать его из выдачи в теле ответа)
   },
 
@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+    validate: {
+      validator(v) {
+        return /(https?:\/\/)(w{3}\.)?([a-z0-9\-._~:/?#[\]@!$&'()*+,;=])(#)?/.test(v);
+      },
+    },
   },
 });
 

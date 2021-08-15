@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
+const { celebrate, Joi, errors } = require('celebrate'); // миддлвар для валидации приходящих на сервер запросов
+
 const {
   login, createUser,
 } = require('./controllers/users');
@@ -24,19 +26,39 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 
 app.use(cookieParser()); // подключаем парсер кук как мидлвэр
 
-app.post('/signin', login);
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(4),
+  }),
+}), login);
 
-app.post('/signup', createUser);
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(4),
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string(),
+  }),
+}), createUser);
 
 // авторизация
-app.use(require('./middlewares/auth'));
+app.use(celebrate({
+  cookies: Joi.object().keys({
+    jwt: Joi.string().required(),
+  }).unknown(true),
+}), require('./middlewares/auth'));
 
 app.use('/users', require('./routes/users'));
 
 app.use('/cards', require('./routes/cards'));
 
+// обработчики ошибок
+app.use(errors()); // обработчик ошибок celebrate
+
 // eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
+app.use((err, req, res, next) => { // наш централизованный обработчик
   // если у ошибки нет статуса, выставляем 500
   const { statusCode = 500, message } = err;
 
