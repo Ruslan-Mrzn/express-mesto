@@ -4,7 +4,7 @@
   "description": "`/routes` — папка с файлами роутера  \r `/controllers` — папка с файлами контроллеров пользователя и карточки   \r `/models` — папка с файлами описания схем пользователя и карточки",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
+    "start": "NODE_ENV=production node app.js",
     "dev": "nodemon app.js",
     "lint": "npx eslint .",
     "fix": "npx eslint --fix .",
@@ -15,7 +15,7 @@
     "url": "git+https://github.com/Ruslan-Mrzn/express-mesto.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ruslan <russl.murzin@gmail.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Ruslan-Mrzn/express-mesto/issues"

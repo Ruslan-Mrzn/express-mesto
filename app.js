@@ -3,6 +3,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const { celebrate, Joi, errors } = require('celebrate'); // миддлвар для валидации приходящих на сервер запросов
+// eslint-disable-next-line no-unused-vars
+const validator = require('validator');
+
+const { checkURL } = require('./utils/utils');
 
 const {
   login, createUser,
@@ -39,7 +43,7 @@ app.post('/signup', celebrate({
     password: Joi.string().required().min(4),
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
-    avatar: Joi.string(),
+    avatar: Joi.string().custom(checkURL),
   }),
 }), createUser);
 
@@ -74,5 +78,5 @@ app.use((err, req, res, next) => { // наш централизованный о
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`App listening on port ${PORT}`);
+  console.log(`App listening on port ${PORT}, app mode is ${process.env.NODE_ENV ? 'production' : 'development'}`);
 });

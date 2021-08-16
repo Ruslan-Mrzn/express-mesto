@@ -1,5 +1,9 @@
 const router = require('express').Router();
 const { celebrate, Joi } = require('celebrate'); // миддлвар для валидации приходящих на сервер запросов
+// eslint-disable-next-line no-unused-vars
+const validator = require('validator');
+
+const { checkURL } = require('../utils/utils');
 
 const {
   getCards, createCard, deleteCard, likeCard, dislikeCard,
@@ -10,7 +14,7 @@ router.get('/', getCards);
 router.post('/', celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),
-    link: Joi.string().required(),
+    link: Joi.string().custom(checkURL).required(),
   }),
 }), createCard);
 

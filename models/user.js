@@ -15,7 +15,6 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 4,
     select: false, // необходимо добавить поле select (чтобы убрать его из выдачи в теле ответа)
   },
 
@@ -65,5 +64,13 @@ userSchema.statics.findUserByCredentials = function (email, password) {
     });
   // блок catch находится в контроллере
 };
+
+function hidePassword() {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
+}
+
+userSchema.methods.hidePassword = hidePassword;
 
 module.exports = mongoose.model('user', userSchema);

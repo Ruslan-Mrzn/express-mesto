@@ -7,7 +7,7 @@ const IncorrectDataError = require('../errors/incorrect-data-err');
 const NotFoundError = require('../errors/not-found-err');
 const ConflictError = require('../errors/conflict-err');
 
-const { JWT_SECRET } = process.env;
+const { getSecret } = require('../utils/utils');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
@@ -46,7 +46,7 @@ module.exports.createUser = (req, res, next) => {
   if (!email || !password) {
     throw new IncorrectDataError('Email или пароль не могут быть пустыми');
   }
-  if (password.length < 3) {
+  if (password.length < 4) {
     throw new IncorrectDataError('Пароль должен состоять не менее чем из 4-х символов');
   }
   bcrypt.hash(password, 10)
@@ -54,7 +54,7 @@ module.exports.createUser = (req, res, next) => {
       User.create({
         name, about, avatar, email, password: hash,
       })
-        .then((user) => res.send({ data: user }))
+        .then((user) => res.send({ data: user.hidePassword() }))
         .catch((err) => {
           if (err.name === 'ValidationError') {
             next(new IncorrectDataError('Ошибка! Переданы некорректные данные при создании пользователя'));
@@ -124,7 +124,7 @@ module.exports.login = (req, res, next) => {
     .then((user) => {
       // аутентификация успешна! пользователь в переменной user
       // создадим токен
-      const token = jwt.sign({ _id: user._id }, JWT_SECRET);
+      const token = jwt.sign({ _id: user._id }, getSecret());
       // отправим токен, браузер сохранит его в куках
 
       res
@@ -134,7 +134,7 @@ module.exports.login = (req, res, next) => {
           httpOnly: true, // такую куку нельзя прочесть из JavaScript
           sameSite: true, // добавили опцию защиты от автоматической отправки кук
         })
-        .send({ data: user }); // если у ответа нет тела, можно использовать метод end
+        .send({ data: user.hidePassword() }); // если у ответа нет тела,можно использовать метод end
     })
     .catch((err) => next(err));
 };
