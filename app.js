@@ -6,6 +6,8 @@ const { celebrate, Joi, errors } = require('celebrate'); // миддлвар д�
 // eslint-disable-next-line no-unused-vars
 const validator = require('validator');
 
+const NotFoundError = require('./errors/not-found-err');
+
 const { checkURL } = require('./utils/utils');
 
 const {
@@ -57,6 +59,8 @@ app.use(celebrate({
 app.use('/users', require('./routes/users'));
 
 app.use('/cards', require('./routes/cards'));
+
+app.use('*', () => { throw new NotFoundError('Ресурс не найден'); });
 
 // обработчики ошибок
 app.use(errors()); // обработчик ошибок celebrate
