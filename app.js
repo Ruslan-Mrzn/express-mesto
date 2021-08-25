@@ -6,6 +6,8 @@ const { celebrate, Joi, errors } = require('celebrate'); // миддлвар д�
 // eslint-disable-next-line no-unused-vars
 const validator = require('validator');
 
+const { requestLogger, errorLogger } = require('./middlewares/logger');
+
 const NotFoundError = require('./errors/not-found-err');
 
 const { checkURL } = require('./utils/utils');
@@ -31,6 +33,8 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 });
 
 app.use(cookieParser()); // подключаем парсер кук как мидлвэр
+
+app.use(requestLogger); // подключаем логгер запросов
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
@@ -61,6 +65,8 @@ app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
 
 app.use('*', () => { throw new NotFoundError('Ресурс не найден'); });
+
+app.use(errorLogger); // подключаем логгер ошибок
 
 // обработчики ошибок
 app.use(errors()); // обработчик ошибок celebrate
