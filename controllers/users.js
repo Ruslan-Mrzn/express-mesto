@@ -11,24 +11,35 @@ const { getSecret } = require('../utils/utils');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.send({ data: users }))
+    .then((users) => res.send(users))
     .catch((err) => next(err));
+};
+
+module.exports.getCurrentUser = (req, res, next) => {
+  User.findById(req.user._id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
+      }
+      res.send(user);
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new IncorrectDataError('Невалидный id пользователя'));
+        return;
+      }
+      next(err);
+    });
 };
 
 module.exports.getUser = (req, res, next) => {
   const { id } = req.params;
-  if (id === 'me') {
-    User.findById(req.user._id)
-      .then((user) => res.send({ data: user }))
-      .catch((err) => next(err));
-    return;
-  }
   User.findById(id)
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Нет пользователя с таким id');
       }
-      res.send({ data: user });
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -54,7 +65,7 @@ module.exports.createUser = (req, res, next) => {
       User.create({
         name, about, avatar, email, password: hash,
       })
-        .then((user) => res.send({ data: user.hidePassword() }))
+        .then((user) => res.send(user.hidePassword()))
         .catch((err) => {
           if (err.name === 'ValidationError') {
             next(new IncorrectDataError('Ошибка! Переданы некорректные данные при создании пользователя'));
@@ -79,7 +90,7 @@ module.exports.updateProfile = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Нет пользователя с таким id');
       }
-      res.send({ data: user });
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -102,7 +113,7 @@ module.exports.updateAvatar = (req, res, next) => {
       if (!user) {
         throw new NotFoundError('Нет пользователя с таким id');
       }
-      res.send({ data: user });
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -132,9 +143,15 @@ module.exports.login = (req, res, next) => {
           // token - наш JWT токен, который мы отправляем
           maxAge: 3600000 * 24 * 7, // кука будет храниться 7 дней
           httpOnly: true, // такую куку нельзя прочесть из JavaScript
-          sameSite: true, // добавили опцию защиты от автоматической отправки кук
+          sameSite: 'None',
+          secure: true,
         })
-        .send({ data: user.hidePassword() }); // если у ответа нет тела,можно использовать метод end
+        .send(user.hidePassword()); // если у ответа нет тела,можно использовать метод end
     })
     .catch((err) => next(err));
+};
+
+module.exports.logout = (req, res, next) => {
+  res.clearCookie('jwt').send({ message: 'cookie удалены' });
+  next();
 };

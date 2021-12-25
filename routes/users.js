@@ -6,14 +6,16 @@ const validator = require('validator');
 const { checkURL } = require('../utils/utils');
 
 const {
-  getUsers, getUser, updateProfile, updateAvatar,
+  getUsers, getUser, getCurrentUser, updateProfile, updateAvatar,
 } = require('../controllers/users');
 
 router.get('/', getUsers);
 
+router.get('/me', getCurrentUser);
+
 router.get('/:id', celebrate({
   params: Joi.object().keys({
-    id: Joi.string().alphanum().length(24),
+    id: Joi.string().hex().length(24),
   }),
 }), getUser);
 

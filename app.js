@@ -2,6 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
+// const { rateLimit } = require('express-rate-limit');
+const helmet = require('helmet');
 const { celebrate, Joi, errors } = require('celebrate'); // миддлвар для валидации приходящих на сервер запросов
 // eslint-disable-next-line no-unused-vars
 const validator = require('validator');
@@ -12,12 +15,20 @@ const NotFoundError = require('./errors/not-found-err');
 
 const { checkURL } = require('./utils/utils');
 
+const { getMongoAddress } = require('./utils/utils');
+
 const {
-  login, createUser,
+  login, createUser, logout,
 } = require('./controllers/users');
 
 const app = express();
 
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 100,
+// });
+
+app.set('trust proxy', 1);
 app.use(express.json()); // для собирания JSON-формата
 app.use(express.urlencoded({ extended: true })); // для приёма веб-страниц внутри POST-запроса
 
@@ -25,16 +36,24 @@ app.use(express.urlencoded({ extended: true })); // для приёма веб-�
 const { PORT = 3000 } = process.env;
 
 // подключаемся к серверу mongo
-mongoose.connect('mongodb://localhost:27017/mestodb', {
-  useNewUrlParser: true,
-  useCreateIndex: true,
-  useFindAndModify: false,
-  useUnifiedTopology: true,
-});
+mongoose.connect(getMongoAddress());
+
+app.use(helmet()); // простановка secutity-заголовков http запросов
 
 app.use(cookieParser()); // подключаем парсер кук как мидлвэр
 
 app.use(requestLogger); // подключаем логгер запросов
+
+// app.use(limiter); // ограничение кол-ва запросов (защита от DoS-атак)
+
+app.use(cors({ credentials: true, origin: true })); // cors-мидвара
+
+// Краш-тест сервера, не забыть убрать после сдачи работы!
+app.get('/crash-test', () => {
+  setTimeout(() => {
+    throw new Error('Сервер сейчас упадёт');
+  }, 0);
+});
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
@@ -53,12 +72,10 @@ app.post('/signup', celebrate({
   }),
 }), createUser);
 
-// авторизация
-app.use(celebrate({
-  cookies: Joi.object().keys({
-    jwt: Joi.string().required(),
-  }).unknown(true),
-}), require('./middlewares/auth'));
+// авторизация перед защищаемыми роутами
+app.use(require('./middlewares/auth'));
+
+app.post('/signout', logout);
 
 app.use('/users', require('./routes/users'));
 
@@ -71,22 +88,10 @@ app.use(errorLogger); // подключаем логгер ошибок
 // обработчики ошибок
 app.use(errors()); // обработчик ошибок celebrate
 
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => { // наш централизованный обработчик
-  // если у ошибки нет статуса, выставляем 500
-  const { statusCode = 500, message } = err;
-
-  res
-    .status(statusCode)
-    .send({
-      // проверяем статус и выставляем сообщение в зависимости от него
-      message: statusCode === 500
-        ? 'На сервере произошла ошибка'
-        : message,
-    });
-});
+// кастомный обработчик ошибок
+app.use(require('./middlewares/custom-errors-handler'));
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`App listening on port ${PORT}, app mode is ${process.env.NODE_ENV ? 'production' : 'development'}`);
+  console.log(`App listening on port ${PORT}, app mode is ${process.env.NODE_ENV}`);
 });
