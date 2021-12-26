@@ -33,7 +33,7 @@ app.use(express.json()); // для собирания JSON-формата
 app.use(express.urlencoded({ extended: true })); // для приёма веб-страниц внутри POST-запроса
 
 // Слушаем 3000 порт
-const { PORT = 3000 } = process.env;
+const { PORT = 3001 } = process.env;
 
 // подключаемся к серверу mongo
 mongoose.connect(getMongoAddress());
